@@ -1,8 +1,8 @@
 
 import React, { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import PChart from "@/components/PChart";
 import XBarChart from "@/components/XBarChart";
+import XBarRChart from "@/components/XBarRChart";
 
 const Index = () => {
   return (
@@ -12,35 +12,35 @@ const Index = () => {
           Statistical Process Control Calculator
         </h1>
         <p className="text-gray-300 max-w-2xl mx-auto px-4">
-          Analyze your quality control data with P-Charts and X-Bar Charts to monitor process stability and identify improvement opportunities
+          Analyze your quality control data with X-Bar Charts and X-Bar R Charts to monitor process stability and identify improvement opportunities
         </p>
       </header>
       
       <main className="container mx-auto px-4">
-        <Tabs defaultValue="pchart" className="w-full">
+        <Tabs defaultValue="xbar" className="w-full">
           <div className="flex justify-center mb-6">
             <TabsList className="grid w-full max-w-md grid-cols-2">
-              <TabsTrigger 
-                value="pchart" 
-                className="data-[state=active]:bg-black/60 data-[state=active]:text-neon-blue data-[state=active]:shadow-[0_0_10px_theme(colors.neon.blue)]"
-              >
-                P-Chart
-              </TabsTrigger>
               <TabsTrigger 
                 value="xbar" 
                 className="data-[state=active]:bg-black/60 data-[state=active]:text-neon-blue data-[state=active]:shadow-[0_0_10px_theme(colors.neon.blue)]"
               >
-                X-Bar Chart
+                X-Bar Chart (Mean)
+              </TabsTrigger>
+              <TabsTrigger 
+                value="xbarr" 
+                className="data-[state=active]:bg-black/60 data-[state=active]:text-neon-blue data-[state=active]:shadow-[0_0_10px_theme(colors.neon.blue)]"
+              >
+                X-Bar R Chart
               </TabsTrigger>
             </TabsList>
           </div>
           
           <div className="flex justify-center">
-            <TabsContent value="pchart" className="w-full flex justify-center">
-              <PChart />
-            </TabsContent>
             <TabsContent value="xbar" className="w-full flex justify-center">
               <XBarChart />
+            </TabsContent>
+            <TabsContent value="xbarr" className="w-full flex justify-center">
+              <XBarRChart />
             </TabsContent>
           </div>
         </Tabs>
@@ -54,17 +54,17 @@ const Index = () => {
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
               <div>
-                <h3 className="text-xl font-semibold mb-2 text-neon-blue">P-Chart</h3>
+                <h3 className="text-xl font-semibold mb-2 text-neon-blue">X-Bar Chart (Mean)</h3>
                 <p className="text-sm">
-                  P-Charts are used when monitoring the proportion of nonconforming units in a sample where each unit is either conforming or nonconforming. 
-                  Common applications include tracking defect rates, error percentages, and failure rates.
+                  X-Bar Charts monitor the process mean using samples taken at regular intervals. 
+                  They track the average of measurements and can detect shifts in the process average over time.
                 </p>
               </div>
               <div>
-                <h3 className="text-xl font-semibold mb-2 text-neon-blue">X-Bar Chart</h3>
+                <h3 className="text-xl font-semibold mb-2 text-neon-blue">X-Bar R Chart</h3>
                 <p className="text-sm">
-                  X-Bar Charts monitor the process mean using samples taken at regular intervals. They are suitable for continuous data like measurements,
-                  weights, temperatures, or dimensions that can be measured on a continuous scale.
+                  X-Bar R Charts use both the sample means (X-Bar) and ranges (R) to monitor process average and variation.
+                  This provides insights into both central tendency and process consistency.
                 </p>
               </div>
             </div>

@@ -6,7 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine, ResponsiveContainer } from "recharts";
-import { ChartLine } from "lucide-react";
+import { ChartLine, Calculator } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface XBarDataPoint {
   sample: number;
@@ -33,6 +41,19 @@ const XBarChart = () => {
     lcl: 0,
     outOfControl: false,
   });
+  
+  // Control chart constants based on sample size
+  const controlConstants: {[key: number]: {A2: number, D3: number, D4: number}} = {
+    2: { A2: 1.880, D3: 0, D4: 3.267 },
+    3: { A2: 1.023, D3: 0, D4: 2.574 },
+    4: { A2: 0.729, D3: 0, D4: 2.282 },
+    5: { A2: 0.577, D3: 0, D4: 2.114 },
+    6: { A2: 0.483, D3: 0, D4: 2.004 },
+    7: { A2: 0.419, D3: 0.076, D4: 1.924 },
+    8: { A2: 0.373, D3: 0.136, D4: 1.864 },
+    9: { A2: 0.337, D3: 0.184, D4: 1.816 },
+    10: { A2: 0.308, D3: 0.223, D4: 1.777 }
+  };
 
   const calculateXBarChart = () => {
     if (!sampleValues.trim()) {
@@ -75,16 +96,20 @@ const XBarChart = () => {
       }, 0) / (newSamples.length > 1 ? newSamples.length - 1 : 1)
     );
     
-    // A4 constant for control limits (approximation for demonstration)
-    // In practice, this depends on sample size and would be looked up in a table
-    const a4 = 1.128 / Math.sqrt(values.length); // Approximation
+    // Get sample size
+    const sampleSize = values.length;
+    
+    // Use appropriate control limits based on sample size and stdDev
+    // For this simplified version, we're using 3-sigma limits
+    const ucl = xBarBar + 3 * (stdDev / Math.sqrt(sampleSize));
+    const lcl = xBarBar - 3 * (stdDev / Math.sqrt(sampleSize));
     
     // Calculate control limits
     const updatedSamples = newSamples.map((sample) => {
       return {
         ...sample,
-        ucl: xBarBar + 3 * stdDev,
-        lcl: xBarBar - 3 * stdDev,
+        ucl,
+        lcl,
         cl: xBarBar,
       };
     });
@@ -101,8 +126,8 @@ const XBarChart = () => {
     setResults({
       xBarBar,
       cl: xBarBar,
-      ucl: xBarBar + 3 * stdDev,
-      lcl: xBarBar - 3 * stdDev,
+      ucl,
+      lcl,
       outOfControl,
     });
   };
@@ -143,9 +168,10 @@ const XBarChart = () => {
       <CardContent>
         <div className="grid gap-6">
           <Tabs defaultValue="calculator" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="calculator">Calculator</TabsTrigger>
-              <TabsTrigger value="info">Information & Formulas</TabsTrigger>
+              <TabsTrigger value="results">Chart</TabsTrigger>
+              <TabsTrigger value="info">Information</TabsTrigger>
             </TabsList>
             <TabsContent value="calculator" className="space-y-6">
               <div className="flex flex-col space-y-2 my-4">
@@ -177,10 +203,76 @@ const XBarChart = () => {
                 >
                   Reset Data
                 </Button>
+                
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button className="border-neon-pink text-neon-pink bg-black/60 border hover:bg-neon-pink/10 shadow-[0_0_5px_theme(colors.neon.pink)]">
+                      <Calculator className="mr-2 h-4 w-4" /> Control Constants
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="glass-card border-neon-blue">
+                    <DialogHeader>
+                      <DialogTitle className="neon-text">Control Chart Constants</DialogTitle>
+                      <DialogDescription>
+                        Constants used for calculating control limits based on sample size
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-white/10">
+                            <th className="py-2 px-2 text-left">Sample Size</th>
+                            <th className="py-2 px-2 text-left">A2</th>
+                            <th className="py-2 px-2 text-left">D3</th>
+                            <th className="py-2 px-2 text-left">D4</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {Object.entries(controlConstants).map(([size, constants]) => (
+                            <tr key={size} className="border-b border-white/5 hover:bg-white/5">
+                              <td className="py-1.5 px-2">{size}</td>
+                              <td className="py-1.5 px-2">{constants.A2}</td>
+                              <td className="py-1.5 px-2">{constants.D3}</td>
+                              <td className="py-1.5 px-2">{constants.D4}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="text-xs mt-4">
+                      <p><span className="font-bold text-neon-blue">A2:</span> Factor for calculating X-Bar control limits using R-Bar</p>
+                      <p><span className="font-bold text-neon-blue">D3:</span> Factor for calculating R chart lower control limit</p>
+                      <p><span className="font-bold text-neon-blue">D4:</span> Factor for calculating R chart upper control limit</p>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
 
               {samples.length > 0 && (
                 <div className="mt-6 space-y-6">
+                  <div className="overflow-x-auto border border-white/10 rounded-lg">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-black/40 border-b border-white/20">
+                          <th className="py-2 px-4 text-left">Sample</th>
+                          <th className="py-2 px-4 text-left">Values</th>
+                          <th className="py-2 px-4 text-left">Mean</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {samples.map((sample) => (
+                          <tr key={sample.sampleNumber} className="border-b border-white/5 hover:bg-white/5">
+                            <td className="py-2 px-4">{sample.sampleNumber}</td>
+                            <td className="py-2 px-4 font-mono">
+                              {sample.values.join(", ")}
+                            </td>
+                            <td className="py-2 px-4 font-mono">{sample.mean.toFixed(4)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="p-4 border border-white/10 rounded-lg bg-black/30">
                       <h3 className="text-lg font-semibold mb-2">Results</h3>
@@ -210,9 +302,18 @@ const XBarChart = () => {
                       )}
                       <p className="mt-2 text-sm">Total samples: {samples.length}</p>
                       <p className="text-sm">Last sample mean: {samples[samples.length - 1].mean.toFixed(4)}</p>
+                      <p className="mt-2 text-sm">
+                        <span className="font-semibold">Formula: </span>
+                        <span>UCL/LCL = X̄-bar ± 3σ/√n</span>
+                      </p>
                     </div>
                   </div>
-
+                </div>
+              )}
+            </TabsContent>
+            <TabsContent value="results" className="space-y-4">
+              {samples.length > 0 ? (
+                <div className="space-y-4">
                   <div className="h-[400px] mt-4">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart
@@ -241,6 +342,27 @@ const XBarChart = () => {
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
+
+                  <div className="p-4 border border-white/10 rounded-lg bg-black/30">
+                    <h3 className="text-lg font-semibold mb-2">Chart Interpretation</h3>
+                    <p>
+                      The X-Bar chart plots the mean of each sample over time. Points that fall outside the control
+                      limits (UCL or LCL) indicate that the process may be influenced by special cause variation
+                      and require investigation.
+                    </p>
+                    <div className={`mt-3 p-2 text-sm rounded-md ${results.outOfControl ? 'bg-red-500/20 border border-red-500/40' : 'bg-green-500/20 border border-green-500/40'}`}>
+                      {results.outOfControl ? (
+                        <p>⚠️ Process is out of control! Some points exceed control limits.</p>
+                      ) : (
+                        <p>✅ Process is in control. All points within control limits.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-20">
+                  <p className="text-lg text-gray-400">No data available. Add samples to view chart.</p>
+                  <p className="text-sm text-gray-500 mt-2">Go to Calculator tab to add sample data</p>
                 </div>
               )}
             </TabsContent>
@@ -293,6 +415,24 @@ const XBarChart = () => {
                     <li>Service Industries: Tracking customer waiting times</li>
                   </ul>
                 </div>
+              </div>
+              <div className="p-4 border border-white/10 rounded-lg bg-black/30">
+                <h4 className="font-semibold mb-2">Control Chart Constants</h4>
+                <p>
+                  Control chart constants (A2, D3, D4) are mathematically derived factors used in calculating
+                  control limits. Their values depend on the subgroup sample size (n).
+                </p>
+                <p className="mt-2">
+                  <span className="font-semibold">Common usage:</span>
+                </p>
+                <ul className="list-disc pl-5 space-y-1 text-sm mt-1">
+                  <li>A2: Used for computing control limits for the X-bar chart based on R</li>
+                  <li>D3: Used for computing the lower control limit for the R chart</li>
+                  <li>D4: Used for computing the upper control limit for the R chart</li>
+                </ul>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Click the "Control Constants" button to view a table of values for different sample sizes.
+                </p>
               </div>
               <div className="p-4 border border-white/10 rounded-lg bg-black/30">
                 <h4 className="font-semibold mb-2">Interpreting Results</h4>
